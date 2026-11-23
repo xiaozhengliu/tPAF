@@ -1,1 +1,54 @@
-# tPAF
+# t-PAF: Treatment-adjusted population attributable fraction for dementia burden attributable to depression
+
+Code for: *Depression treatment coverage and avoidable dementia burden: a
+treatment-adjusted attributable-fraction analysis of 204 countries, 1990-2050*
+(manuscript under review at Alzheimer's & Dementia; contact Xiaozheng Liu,
+lxz_2088@hotmail.com).
+
+## Overview
+
+The treatment-adjusted population attributable fraction (t-PAF) links
+country-specific depression treatment coverage to the excess dementia risk
+conferred by major depressive disorder (MDD). Untreated RR = 1.31 (Chan et
+al., 2019); treatment-effect parameter eta = 0.3 primary (0.2-0.5
+sensitivity); effective RR at coverage c: RR_eff = 1 + (RR-1)(1-eta*c);
+t-PAF(c) = Pe*(RR_eff-1)/(1+Pe*(RR_eff-1)). Scenario targets are floored at
+current country-level coverage (scale-up only).
+
+## Pipeline (run order)
+
+| Script | Inputs | Outputs | Produces |
+|---|---|---|---|
+| gbd_step2b_decomp3.R | GBD 2023 dementia/MDD extracts | fig2_decomp.* | Table 2 (decomposition), Fig. 1 |
+| gbd_step2c_paf45.R | GBD 2023 dementia/MDD extracts | gbd_paf.rds | untreated PAF series, 1990-2023 |
+| gbd_step3b_tpaf.R | gbd_paf.rds; mdd_mat_204_santomauro2024.csv | gbd_step3b_tpaf.rds | country-level t-PAF, scenarios; Table S3 |
+| gbd_step3c_doseresp.R | gbd_step3b_tpaf.rds | gbd_step3c_doseresp.csv | un-floored dose-response curve |
+| gbd_step4_bapc.R | gbd_paf.rds; gbd_age.rds | gbd_step4_bapc.rds/.csv | 2024-2050 projection; Fig. 4, Table 1 |
+| gbd_step5_floored_curve.R | gbd_paf.rds; mdd_mat_204_santomauro2024.csv | gbd_step3c_doseresp_floored.csv | floored dose-response; Fig. 3, 13.65% reference |
+| gbd_step5_rr_sensitivity.R | gbd_paf.rds; mat csv; gbd_step4_bapc.rds | rr_sensitivity.csv | Table 2 (RR sensitivity; validates S1 = 35,690) |
+| gbd_step5_sdi.R | gbd_step3b_tpaf.rds; IHME SDI file; gbd_age.rds | Table_S6_SDI_quintiles.csv | Table S6 (SDI quintiles) |
+| fig_paper2_v2.py | fig2/fig34/fig5 data files | fig2-5 .pdf/.png | Figures 1, 3, 4 (Fig. 2 maps: gbd_fig_map.R/py) |
+
+## External data (not in this repository)
+
+- GBD 2023 dementia (cause 543) and MDD (cause 568) prevalence, deaths,
+  DALYs, 1990-2023: Institute for Health Metrics and Evaluation,
+  https://vizhub.healthdata.org/gbd-results/ (free registration required).
+- Treatment-coverage estimates: Santomauro et al., Lancet Psychiatry 2024;
+  2021 (PMID 39572109); carried forward to 2023 in the analysis
+  (mdd_mat_204_santomauro2024.csv).
+- SDI quintiles: IHME, GBD 2023 Socio-demographic Index release
+  (IHME_GBD_2023_SDI_1950_2023_SDI_QUINTILES_Y2025M10D12.csv).
+- eTableS3_all_204_countries.csv: country-level results table.
+
+## Environment
+
+R >= 4.2 with data.table; figures in Python 3 with pandas/numpy/matplotlib
+(WSL2; run `Rscript <script>` in the working directory).
+
+## Reproduction checks
+
+- gbd_step5_rr_sensitivity.R asserts that the RR = 1.31 row reproduces the
+  locked headline values (S1 = 35,690 DALYs/yr; cumulative 4.03M/7.90M).
+- gbd_step5_floored_curve.R asserts floored S1/universal equal the locked
+  values (flooring does not bind at 50%/universal).
